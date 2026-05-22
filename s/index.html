@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saif AI | Professional Prompt Lab</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+Arabic:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav" style="display:none;">
+        <button class="m-nav-btn" onclick="actions.home()"><i
+                data-lucide="layout-grid"></i><span>الرئيسية</span></button>
+        <button class="m-nav-btn" id="m-btn-menu" onclick="ux.openMenu()"><i
+                data-lucide="menu"></i><span>القائمة</span></button>
+
+
+        <!-- Center Add Button -->
+        <button id="m-add-btn" class="m-nav-add" onclick="actions.prepareAdd()">
+            <i data-lucide="plus"></i>
+        </button>
+
+        <button class="m-nav-btn" onclick="actions.filterFavs()"><i
+                data-lucide="heart"></i><span>المفضلة</span></button>
+        <!-- Single Smart Auth/Profile Button for Mobile -->
+        <button class="m-nav-btn" id="m-user-btn" onclick="userAuth.openAuthModal()"><i
+                data-lucide="user"></i><span>حسابي</span></button>
+    </div>
+
+    <!-- Modal: Mobile Menu (Unified) -->
+    <div class="overlay" id="mobile-menu" onclick="ux.bgClose(event, 'mobile-menu')">
+        <div class="modal">
+            <div class="modal-h">
+                <h2>القائمة الرئيسية</h2>
+                <button class="btn-close" onclick="ux.closeM()"><i data-lucide="x"></i></button>
+            </div>
+
+            <div class="nav-head" style="margin-top:0;">الأقسام الفنية</div>
+            <div id="m-cat-list" class="sidebar-nav" style="padding:0; margin-bottom:2rem;"></div>
+
+            <div id="m-page-list-container">
+                <div class="nav-head">صفحات الموقع</div>
+                <div id="m-page-list" class="sidebar-nav" style="padding:0;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Immersive Overlay (Focus Mode) -->
+    <div id="full-p-overlay" onclick="ux.closeFullP(event)" style="display:none;">
+        <div class="focus-box" onclick="event.stopPropagation()">
+            <div
+                style="margin-bottom:2rem; font-size:.8rem; font-weight:900; color:var(--p); text-transform:uppercase; letter-spacing:2px; text-align:center;">
+                وضع التركيز العميق</div>
+            <div id="full-p-box"></div>
+            <div style="margin-top:3rem; display:flex; justify-content:center; gap:15px;">
+                <button class="btn-copy"
+                    onclick="ux.copy(encodeURIComponent(document.getElementById('full-p-box').innerText), this)"
+                    style="height:55px; padding:0 2rem;">
+                    <i data-lucide="copy"></i> نسخ البرومبت الآن
+                </button>
+                <button class="btn-icon" style="width:55px; height:55px;" onclick="ux.closeFullP(event)">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Sidebar ─── -->
+    <aside id="sidebar">
+        <div class="logo">
+            <div class="logo-icon"><i data-lucide="zap" fill="currentColor"></i></div>
+            <h1>Saif AI</h1>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-head">التصفح الرئيسي</div>
+            <div id="nav-home" class="nav-item active" onclick="actions.home()">
+                <i data-lucide="layout-grid"></i> <span>المعرض العام</span>
+            </div>
+            <div id="nav-cats" class="nav-item" onclick="actions.viewCats()">
+                <i data-lucide="layers"></i> <span>الأقسام</span>
+            </div>
+            <div id="nav-favs" class="nav-item" onclick="actions.filterFavs()">
+                <i data-lucide="heart"></i> <span>المفضلة</span>
+            </div>
+            <div class="nav-item" id="nav-profile" onclick="actions.viewProfile()">
+                <i data-lucide="user"></i> <span>ملفي الشخصي</span>
+            </div>
+
+            <div id="dynamic-pages"></div>
+
+            <div id="admin-menu" style="display:none;">
+                <div class="nav-head">لوحة التحكم</div>
+                <div class="nav-item" onclick="ux.openM('cat-modal')">
+                    <i data-lucide="folder-plus"></i> <span>إدارة الأقسام</span>
+                </div>
+                <div class="nav-item" onclick="ux.openM('page-modal')">
+                    <i data-lucide="file-plus"></i> <span>إدارة الصفحات</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="auth-panel" class="auth-panel"></div>
+    </aside>
+
+    <!-- ─── Main ─── -->
+    <main>
+        <header>
+            <div class="search-box">
+                <i data-lucide="search" size="18"></i>
+                <input type="text" placeholder="ابحث عن الجمال داخل البرومبتات..." oninput="actions.search(this.value)">
+            </div>
+            <div class="top-btns">
+                <button class="btn-icon" onclick="ux.toggleTheme()" id="theme-btn"></button>
+
+                <!-- Personal Actions -->
+                <div class="personal-hub">
+                    <button class="btn-icon" onclick="actions.filterFavs()" title="المفضلة">
+                        <i data-lucide="heart" size="18"></i>
+                    </button>
+                    <!-- Centralized User/Auth Button -->
+                    <div id="user-avatar-btn" onclick="userAuth.openAuthModal()" class="user-pill">
+                        <i data-lucide="user" size="18"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="hero" id="hero-section">
+                <p>مرحباً بك في مستقبل الفن الرقمي</p>
+                <h1>أكبر مستودع للبرومبتات <br>الاحترافية عالية الجودة.</h1>
+                <p>تصفح، انسخ، وأبدع. المئات من الأوامر الفنية المصممة لك بدقة متناهية.</p>
+            </div>
+
+            <div class="filters">
+                <h2 id="view-title">المعرض الرائد</h2>
+                <select class="sort-sel" onchange="actions.sort(this.value)">
+                    <option value="new">الأحدث أولاً</option>
+                    <option value="old">الأقدم</option>
+                    <option value="az">ترتيب هجائي</option>
+                </select>
+            </div>
+
+            <div class="grid" id="main-grid"></div>
+        </div>
+
+        <button class="fab" id="fab" onclick="actions.prepareAdd()">
+            <i data-lucide="plus" size="32"></i>
+        </button>
+    </main>
+
+    <!-- ─── Toasts ─── -->
+    <div id="toast"><i data-lucide="check-circle" size="20"></i><span id="toast-msg"></span></div>
+
+    <!-- ─── Modals ─── -->
+
+    <!-- Modal: User Auth (Login / Register) -->
+    <div class="overlay" id="login-modal" onclick="ux.bgClose(event, 'login-modal')">
+        <div class="modal" style="max-width:450px; padding:0; overflow:hidden;">
+
+            <!-- Tabs -->
+            <div style="display:grid; grid-template-columns:1fr 1fr;">
+                <button id="auth-tab-login" onclick="userAuth.switchTab('login')"
+                    style="padding:1.2rem; font-weight:900; font-size:0.95rem; border:none; cursor:pointer; background:var(--p); color:white; transition:.2s;">تسجيل
+                    الدخول</button>
+                <button id="auth-tab-reg" onclick="userAuth.switchTab('register')"
+                    style="padding:1.2rem; font-weight:900; font-size:0.95rem; border:none; cursor:pointer; background:var(--bg); color:var(--muted); transition:.2s;">إنشاء
+                    حساب</button>
+            </div>
+
+            <div style="padding:2rem;">
+                <!-- Shared: Admin Login (always visible at top, subtle) -->
+                <div id="panel-login">
+                    <h3 style="font-size:1.3rem; font-weight:900; margin-bottom:.3rem;">أهلاً بعودتك 👋</h3>
+                    <p style="font-size:0.8rem; opacity:0.5; margin-bottom:1.5rem;">سجّل دخولك للوصول إلى مفضلتك وملفك
+                        الشخصي</p>
+                    <div class="input-group">
+                        <label>البريد الإلكتروني</label>
+                        <input type="email" class="field" id="login-email" placeholder="example@email.com">
+                    </div>
+                    <div class="input-group">
+                        <label>كلمة المرور</label>
+                        <input type="password" class="field" id="login-pass" placeholder="••••••••"
+                            onkeydown="if(event.key==='Enter') userAuth.login()">
+                        <div style="text-align:left; margin-top:5px;">
+                            <button onclick="userAuth.forgotPassword()" style="background:none; border:none; color:var(--p); font-size:0.75rem; font-weight:700; cursor:pointer; opacity:0.8;">نسيت كلمة السر؟</button>
+                        </div>
+                    </div>
+                    <button class="btn-copy"
+                        style="width:100%; height:55px; justify-content:center; margin-bottom:1rem;"
+                        onclick="userAuth.login()">
+                        <i data-lucide="log-in" style="margin-left:8px;"></i> دخول
+                    </button>
+                    <p style="text-align:center; font-size:0.75rem; opacity:0.4;">المشرف؟ استخدم نفس النموذج للدخول
+                        للوحة التحكم</p>
+                </div>
+
+                <!-- Register Panel -->
+                <div id="panel-register" style="display:none;">
+                    <h3 style="font-size:1.3rem; font-weight:900; margin-bottom:.3rem;">انضم إلى Saif AI 🚀</h3>
+                    <p style="font-size:0.8rem; opacity:0.5; margin-bottom:1.5rem;">أنشئ حسابك واحفظ برومبتاتك المفضلة
+                    </p>
+                    <div class="input-group">
+                        <label>الاسم الكامل</label>
+                        <input type="text" class="field" id="reg-name" placeholder="اسمك هنا...">
+                    </div>
+                    <div class="input-group">
+                        <label>البريد الإلكتروني</label>
+                        <input type="email" class="field" id="reg-email" placeholder="example@email.com">
+                    </div>
+                    <div class="input-group">
+                        <label>كلمة المرور</label>
+                        <input type="password" class="field" id="reg-pass" placeholder="••••••••"
+                            onkeydown="if(event.key==='Enter') userAuth.register()">
+                    </div>
+                    <button class="btn-copy" style="width:100%; height:55px; justify-content:center;"
+                        onclick="userAuth.register()">
+                        <i data-lucide="user-plus" style="margin-left:8px;"></i> إنشاء الحساب
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: User Profile -->
+    <div class="overlay" id="profile-modal" onclick="ux.bgClose(event, 'profile-modal')">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-h">
+                <h2>ملفك الشخصي</h2>
+                <button class="btn-close" onclick="ux.closeM()"><i data-lucide="x"></i></button>
+            </div>
+
+            <!-- Avatar + Name -->
+            <div style="text-align:center; margin-bottom:2rem;">
+                <div id="profile-avatar"
+                    style="width:80px; height:80px; background:var(--p); border-radius:24px; margin:0 auto 1rem; display:flex; align-items:center; justify-content:center; color:white; font-size:2rem; font-weight:900;">
+                </div>
+                <h3 id="profile-name" style="font-size:1.3rem; font-weight:900;"></h3>
+                <p id="profile-email" style="font-size:0.8rem; opacity:0.5; margin-top:4px;"></p>
+            </div>
+
+            <!-- Stats -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1.5rem;">
+                <div
+                    style="background:var(--bg); padding:1.2rem; border-radius:16px; border:1px solid var(--bord); text-align:center;">
+                    <div id="profile-favs-count" style="font-size:2rem; font-weight:900; color:var(--p);">0</div>
+                    <div style="font-size:0.75rem; opacity:0.5; font-weight:700;">برومبت مفضل</div>
+                </div>
+                <div
+                    style="background:var(--bg); padding:1.2rem; border-radius:16px; border:1px solid var(--bord); text-align:center;">
+                    <div id="profile-since" style="font-size:1rem; font-weight:900; color:var(--p);"></div>
+                    <div style="font-size:0.75rem; opacity:0.5; font-weight:700;">تاريخ الانضمام</div>
+                </div>
+            </div>
+
+            <!-- Profile Favorites Section -->
+            <div style="margin-bottom:2rem;">
+                <h3
+                    style="font-size:0.85rem; font-weight:900; margin-bottom:1rem; text-transform:uppercase; letter-spacing:1px; opacity:0.6;">
+                    مفضلتك السريعة</h3>
+                <div id="profile-favs-list"
+                    style="max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+                    <!-- Filled by auth.js -->
+                </div>
+            </div>
+
+
+            <button class="btn-icon" style="width:100%; height:50px; color:#ef4444; gap:10px;"
+                onclick="userAuth.logout()">
+                <i data-lucide="log-out"></i> تسجيل الخروج
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Product -->
+    <div class="overlay" id="product-modal" onclick="ux.bgClose(event, 'product-modal')">
+        <div class="modal" style="max-width:900px">
+            <div class="modal-h">
+                <h2 id="m-title">إضافة قطعة فنية</h2>
+                <button class="btn-close" onclick="ux.closeM()"><i data-lucide="x"></i></button>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 320px; gap:2.5rem;" class="modal-body">
+                <!-- Inputs Column -->
+                <div>
+                    <div class="input-group">
+                        <label>عنوان العمل</label>
+                        <input type="text" id="p-name" class="field" placeholder="مثلاً: فارس اليوتوبيا المفقودة..."
+                            oninput="ux.updateLiveP()">
+                    </div>
+                    <div class="input-group">
+                        <label>رابط الصورة</label>
+                        <input type="text" id="p-img" class="field" placeholder="https://..."
+                            oninput="ux.updateLiveP()">
+                        <input type="file" id="p-file" hidden onchange="ux.handleFile(this)">
+                        <button class="btn-icon"
+                            style="width:100%; margin-top:8px; height:45px; font-size:.8rem; gap:8px;"
+                            onclick="document.getElementById('p-file').click()">
+                            <i data-lucide="image-plus" size="18"></i> اختر صورة من جهازك
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <label>البرومبت الهندسي</label>
+                        <textarea id="p-prompt" class="field" style="height:120px; line-height:1.6;"
+                            placeholder="اكتب البرومبت هنا..." oninput="ux.updateLiveP()"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>التصنيفات (اضغط للاختيار)</label>
+                        <div id="m-cats" class="cat-chips"></div>
+                    </div>
+                    <!-- Mobile Toggle Preview -->
+                    <button id="toggle-p-btn" class="btn-icon" style="width:100%; height:45px; display:none; margin-top:1rem; gap:8px; font-weight:700;" onclick="ux.togglePreview()">
+                        <i data-lucide="eye" size="18"></i> <span>إظهار المعاينة المباشرة</span>
+                    </button>
+                </div>
+
+                <!-- Preview Column -->
+                <div style="border-right: 1px solid var(--bord); padding-right: 2.5rem;" id="side-preview">
+                    <label
+                        style="display:block; margin-bottom:1rem; font-size:.7rem; font-weight:800; color:var(--muted); text-transform:uppercase;">معاينة
+                        مباشرة</label>
+                    <div id="live-preview-box"></div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:15px; margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--bord);">
+                <button class="btn-copy" id="save-btn" style="flex:1; height:55px; justify-content:center;"
+                    onclick="actions.save()">حفظ البيانات</button>
+                <button class="btn-icon" style="width:55px; height:55px;" onclick="ux.closeM()"><i
+                        data-lucide="x"></i></button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal: Preview -->
+    <div class="overlay" id="preview-modal" onclick="ux.bgClose(event, 'preview-modal')">
+        <div class="modal" style="max-width:800px">
+            <div class="modal-h">
+                <h2 id="prev-name">معاينة العمل</h2>
+                <button class="btn-close" onclick="ux.closeM()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="preview-grid">
+                <div class="p-img-box"><img id="prev-img" src=""></div>
+                <div class="p-info-col">
+                    <div id="prev-tags" class="card-tags" style="padding:0; margin-bottom:1rem;"></div>
+                    <div style="position:relative; width:100%; margin-bottom:1.5rem;">
+                        <div class="p-desc" id="prev-desc" style="padding-bottom:50px;"></div>
+                        <button id="btn-expand-full" class="btn-expand">
+                            <i data-lucide="maximize-2" size="18"></i>
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:12px; margin-top:auto;">
+                        <button class="btn-copy" id="copy-p-btn" style="flex:1; height:55px; justify-content:center;">
+                            <i data-lucide="copy" size="18"></i> نسخ البرومبت الآن
+                        </button>
+                        <button id="admin-edit-p" class="btn-icon" style="width:55px; height:55px; display:none;"><i
+                                data-lucide="edit"></i></button>
+                        <button id="admin-del-p" class="btn-icon del" style="width:55px; height:55px; display:none;"><i
+                                data-lucide="trash-2"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Cat Manage (Enhanced) -->
+    <div class="overlay" id="cat-modal" onclick="ux.bgClose(event, 'cat-modal')">
+        <div class="modal" style="max-width:450px">
+            <div class="modal-h">
+                <h2>إدارة الأقسام الفنية</h2><button class="btn-close" onclick="ux.closeM()"><i
+                        data-lucide="x"></i></button>
+            </div>
+
+            <div class="input-group">
+                <label>أضف قسماً جديداً</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="new-cat" class="field" placeholder="مثلاً: فانتازيا، بورتريه..."
+                        onkeydown="if(event.key==='Enter') actions.addCat()">
+                    <button class="btn-copy" style="width:100px; height:45px; justify-content:center;"
+                        onclick="actions.addCat()">إضافة</button>
+                </div>
+            </div>
+
+            <div style="margin-top:1.5rem;">
+                <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">الأقسام
+                    الحالية</label>
+                <div id="modal-cat-list"
+                    style="margin-top:10px; display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto;">
+                    <!-- Filled by app.js -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Page Manage -->
+    <div class="overlay" id="page-modal" onclick="ux.bgClose(event, 'page-modal')">
+        <div class="modal" style="max-width:600px">
+            <div class="modal-h">
+                <h2>إدارة صفحات الموقع</h2><button class="btn-close" onclick="ux.closeM()"><i
+                        data-lucide="x"></i></button>
+            </div>
+
+            <div style="background:var(--bg); padding:1.5rem; border-radius:18px; margin-bottom:1.5rem;">
+                <h3 style="font-size:0.9rem; font-weight:900; margin-bottom:1rem;">إنشاء صفحة جديدة</h3>
+                <div class="input-group">
+                    <label>عنوان الصفحة</label>
+                    <input type="text" id="new-page-title" class="field" placeholder="مثلاً: من نحن، سياسة الخصوصية...">
+                </div>
+                <div class="input-group">
+                    <label>محتوى الصفحة (HTML مدعوم)</label>
+                    <textarea id="new-page-content" class="field" style="height:120px;"
+                        placeholder="اكتب محتوى الصفحة هنا..."></textarea>
+                </div>
+                <button class="btn-copy" style="width:100%; height:50px; justify-content:center;"
+                    onclick="actions.addPage()">
+                    <i data-lucide="plus-circle" style="margin-left:8px;"></i> نشر الصفحة
+                </button>
+            </div>
+
+            <div id="modal-page-list"
+                style="display:flex; flex-direction:column; gap:10px; max-height:250px; overflow-y:auto; padding:5px;">
+                <!-- Filled by app.js -->
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/auth.js"></script>
+    <script src="assets/app.js"></script>
+</body>
+
+</html>
